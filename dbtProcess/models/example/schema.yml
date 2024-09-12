@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: check_null_first_name
+    description: "Model to check accounts with null first names"
+    columns:
+      - name: account_number
+        description: "The account number of records with null first names"
+        tests:
+          - not_null
