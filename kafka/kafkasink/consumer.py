@@ -2,7 +2,7 @@ from kafka import KafkaConsumer
 import psycopg2
 import json
 
-KAFKA_BOOTSTRAP_SERVERS = ''
+KAFKA_BOOTSTRAP_SERVERS = 'host:port'
 KAFKA_TOPIC = 'accounts'
 POSTGRES_HOST = ''
 POSTGRES_PORT = 21272
@@ -24,7 +24,10 @@ cursor = conn.cursor()
 consumer = KafkaConsumer(
     KAFKA_TOPIC,
     bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-    value_deserializer=lambda x: json.loads(x.decode('utf-8'))
+    value_deserializer=lambda x: json.loads(x.decode('utf-8')),
+    consumer_timeout_ms=30000,
+    enable_auto_commit=True,
+    auto_commit_interval_ms=5000
 )
 
 # Function to insert data into PostgreSQL
@@ -51,11 +54,21 @@ def insert_into_postgres(record):
     print(f"Inserted account {account_number} into PostgreSQL")
 
 # Listen to messages from Kafka and insert into PostgreSQL
-for message in consumer:
-    record = message.value
-    if record and 'account_number' in record:
-        insert_into_postgres(record)
+
+total = 0
+try:
+    for message in consumer:
+        record = message.value
+        if record and 'account_number' in record:
+            insert_into_postgres(record)
+            total +=1
+        print(f'total processed: {total}')
+except Exception as e:
+    print(f'Error {e}')
 
 # Close PostgreSQL and Kafka connections
-cursor.close()
-conn.close()
+finally:
+    total = 0
+    cursor.close()
+    conn.close()
+    print("Consumer has stopped listening due to timeout.")

@@ -20,10 +20,27 @@ dag = DAG(
     'dbt_run_dag',
     default_args=default_args,
     description='Run dbt models in Asia/Bangkok timezone',
-    schedule_interval="*/5 * * * *",  # Run every 5 minutes
+    schedule_interval="*/40 * * * *",  # Run every 5 minutes
     catchup=False,  # Do not backfill missed DAG runs
     concurrency=4,  # Limit number of tasks running concurrently in this DAG
     max_active_runs=1,  # Limit to only one DAG run at a time
+)
+
+
+#kafka first producer
+kafka_producer = BashOperator(
+    task_id='kafka_producer',
+    bash_command='python3.9 /opt/airflow/dags/kafka/kafkasink/producer.py',
+    pool='default_pool',
+    dag = dag
+)
+
+#kafka sinks
+kafka_sink = BashOperator(
+    task_id='kafka_sink',
+    bash_command='python3.9 /opt/airflow/dags/kafka/kafkasink/consumer.py',
+    pool='default_pool',
+    dag = dag
 )
 
 # Task to run dbt command
@@ -34,10 +51,16 @@ dbt_run = BashOperator(
     dag=dag,
 )
 
-kafka_producer = BashOperator(
-    task_id='kafka_producer',
-    bash_command='python3.9 /opt/airflow/dags/kafka/kafkasink/producer.py',
+## kafka producer
+kafka_producer2 = BashOperator(
+    task_id='kafka_producer2',
+    bash_command='python3.9 /opt/airflow/dags/kafka/kafkasource/producer.py',
     dag=dag
 )
 
-dbt_run >> kafka_producer
+# after sink , dbt work
+
+kafka_sink >> dbt_run
+
+# after dbt , kafka producer work
+dbt_run >> kafka_producer2

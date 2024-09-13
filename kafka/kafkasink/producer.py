@@ -1,30 +1,12 @@
+import requests
 from kafka import KafkaProducer
-import psycopg2
 import json
+import time
 
-# PostgreSQL configuration
-POSTGRES_HOST = 'host'
-POSTGRES_PORT = 21272
-POSTGRES_USER = 'user'
-POSTGRES_PASSWORD = 'passs'
-POSTGRES_DATABASE = 'accountsdb'
-
-# Kafka configuration
-KAFKA_BOOTSTRAP_SERVERS = 'bootstrap:port'
-KAFKA_TOPIC = 'null-firstname'
-
-# Number of records in each batch
-BATCH_SIZE = 8
-
-# Connect to PostgreSQL
-conn = psycopg2.connect(
-    host=POSTGRES_HOST,
-    user=POSTGRES_USER,
-    port=POSTGRES_PORT,
-    password=POSTGRES_PASSWORD,
-    dbname=POSTGRES_DATABASE
-)
-cursor = conn.cursor()
+# Set up Elasticsearch and Kafka
+ELASTICSEARCH_URL = 'http://localhost:9200' # should advertise ip
+KAFKA_TOPIC = 'accounts'
+KAFKA_BOOTSTRAP_SERVERS = 'host:port'
 
 # Initialize Kafka Producer
 producer = KafkaProducer(
@@ -32,40 +14,52 @@ producer = KafkaProducer(
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
-# Function to fetch data in batches
-def fetch_batch(offset, limit):
-    query = """
-    SELECT account_number 
-    FROM check_null_first_name 
-    ORDER BY account_number 
-    LIMIT %s OFFSET %s
-    """
-    cursor.execute(query, (limit, offset))
-    return cursor.fetchall()
+# Fetch data from Elasticsearch with scroll
+def fetch_elasticsearch_data(scroll_id=None):
+    if scroll_id:
+        # Fetch the next batch of data using the scroll ID
+        response = requests.post(f'{ELASTICSEARCH_URL}/_search/scroll', json={
+            "scroll": "1m",
+            "scroll_id": scroll_id
+        })
 
-# Initialize initial offset
-offset = 0
+    else:
+        # Fetch the initial batch of data
+        response = requests.post(f'{ELASTICSEARCH_URL}/data/_search?scroll=1m', json={
+            "query": {
+                "match_all": {}
+            },
+            "size": 200
+        })
+    
+    response_data = response.json()
+    # print(json.dumps(response_data, indent=2))
+    return response_data
 
-while True:
-    # Fetch data in batch
-    rows = fetch_batch(offset, BATCH_SIZE)
-    
-    # Break the loop if no more data
-    if not rows:
-        break
-    
-    # Send each account_number in batch to Kafka
-    for row in rows:
-        account_number = row[0]
-        producer.send(KAFKA_TOPIC, {'account_number': account_number})
-    
-    # Flush Kafka messages and ensure they are sent
+# Send data to Kafka
+def send_to_kafka(records):
+    for record in records:
+        producer.send(KAFKA_TOPIC, key=str(record['_id']).encode('utf-8'), value=record['_source'])
+        print(f"Sent record with key {record['_id']} to topic {KAFKA_TOPIC}")
+
+# Main
+if __name__ == "__main__":
+    scroll_id = None
+
+    while True:
+        # Fetch data from Elasticsearch
+        data = fetch_elasticsearch_data(scroll_id)
+         
+        # Send data to Kafka
+        send_to_kafka(data['hits']['hits'])
+
+        # Update scroll_id
+        scroll_id = data['_scroll_id']
+
+        # Check if there is no more data
+        if len(data['hits']['hits']) == 0:
+            break
+        time.sleep(30)
+
+    # Ensure all messages are sent
     producer.flush()
-
-    # Increase offset to fetch the next batch
-    offset += BATCH_SIZE
-
-# Close PostgreSQL and Kafka connections
-cursor.close()
-conn.close()
-producer.close()
