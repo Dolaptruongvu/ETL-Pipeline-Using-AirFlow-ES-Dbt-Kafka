@@ -1,0 +1,26 @@
+source:
+  type: "elasticsearch"
+  config:
+    
+    host: 'localhost:9201'
+
+    
+    username: ""  # optional
+    password: ""  # optional
+
+    
+    use_ssl: False  
+    verify_certs: False 
+
+    
+    env: "PROD"
+
+    
+    index_pattern:
+      allow: [".*data.*"]  
+      deny: [".*skip.*"]  
+
+sink:
+  type: "datahub-rest"
+  config:
+    server: "http://localhost:8080"  

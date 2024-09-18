@@ -1,0 +1,16 @@
+source:
+  type: postgres
+  config:
+    # Coordinates
+    host_port: 
+    database: accountsdb
+
+    # Credentials
+    username: 
+    password: 
+
+
+sink:
+  type: "datahub-rest"
+  config:
+    server: "http://localhost:8080"  

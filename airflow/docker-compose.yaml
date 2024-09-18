@@ -77,8 +77,8 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - D:/datahubproject/dbtProcess:/opt/airflow/dags/dbtProcess  # Ánh xạ thư mục dbtProcess vào container
-    - C:/Users/PC/.dbt:/home/airflow/.dbt  # Ánh xạ file profiles.yml
+    - D:/datahubproject/dbtProcess:/opt/airflow/dags/dbtProcess  
+    - C:/Users/PC/.dbt:/home/airflow/.dbt  
     - D:/datahubproject/kafka:/opt/airflow/dags/kafka
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:

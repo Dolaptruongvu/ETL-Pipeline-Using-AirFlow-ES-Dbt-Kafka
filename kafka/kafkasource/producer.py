@@ -3,14 +3,14 @@ import psycopg2
 import json
 
 # PostgreSQL configuration
-POSTGRES_HOST = 'host'
+POSTGRES_HOST = ''
 POSTGRES_PORT = 21272
-POSTGRES_USER = 'user'
-POSTGRES_PASSWORD = 'pass'
+POSTGRES_USER = ''
+POSTGRES_PASSWORD = ''
 POSTGRES_DATABASE = 'accountsdb'
 
 # Kafka configuration
-KAFKA_BOOTSTRAP_SERVERS = 'host:port'
+KAFKA_BOOTSTRAP_SERVERS = ''
 KAFKA_TOPIC = 'null-firstname'
 
 # Number of records in each batch

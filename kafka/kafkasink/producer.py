@@ -4,9 +4,9 @@ import json
 import time
 
 # Set up Elasticsearch and Kafka
-ELASTICSEARCH_URL = 'http://localhost:9200' # should advertise ip
+ELASTICSEARCH_URL = ''
 KAFKA_TOPIC = 'accounts'
-KAFKA_BOOTSTRAP_SERVERS = 'host:port'
+KAFKA_BOOTSTRAP_SERVERS = ''
 
 # Initialize Kafka Producer
 producer = KafkaProducer(
@@ -29,7 +29,7 @@ def fetch_elasticsearch_data(scroll_id=None):
             "query": {
                 "match_all": {}
             },
-            "size": 200
+            "size": 300
         })
     
     response_data = response.json()

@@ -1,0 +1,15 @@
+source:
+  type: "kafka"
+  config:
+    connection:
+      bootstrap: ""  
+      schema_registry_url: "http://localhost:8081"  
+    topic_patterns:
+      allow: [".*"]  
+    env: "PROD"  
+    platform_instance: "kafka-cluster-1"  
+
+sink:
+  type: "datahub-rest"
+  config:
+    server: "http://localhost:8080" 
